@@ -264,6 +264,7 @@ def plotSolData(allData, shouldParameterize, shouldShow, shouldSave,
 ################################################################################
 # For command-line interaction (entry into the program is below)
 ################################################################################
+'''
 writeSolData(
     "test.dat",
     [1.2, 0, 0],
@@ -283,4 +284,6 @@ plotSolData(
     dataNames=["r", "theta"],
     conversion=paramConversion
     )
+'''
 ################################################################################
+
