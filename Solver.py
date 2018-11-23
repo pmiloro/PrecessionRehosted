@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.animation import ImageMagickWriter
 
 
 def dy_dx(y, x):
@@ -260,6 +262,58 @@ def plotSolData(allData, shouldParameterize, shouldShow, shouldSave,
     #Return True if plot generation was successful
     return True
 
+def makeAnimation(
+    allData,
+    shouldShow,
+    shouldSave,
+    dataNames=["x", "y"],
+    conversion=defaultConversion,
+    paramUnits = ["meters", "meters"],
+    filename = "defaultFilename.gif",
+    animTitle = "Output",
+    boundScale = 1.3,
+    animSpeed = 1,
+    frameSlice = 10
+    ):
+    names = allData[0]
+    fullArray = allData[1]
+
+    tSteps = fullArray[:, 0].flatten()
+    fig, ax = plt.subplots(figsize=(5, 3))
+
+    locs = [names.index(name) for name in dataNames]
+    out = conversion(fullArray[:, :], locs)
+    x = out[:, 0].flatten()
+    y = out[:, 1].flatten()
+
+    xMin = boundScale * np.amin(x)
+    xMax = boundScale * np.amax(x)
+
+    yMin = boundScale * np.amin(y)
+    yMax = boundScale * np.amax(y)
+
+    ax.set(xlim=(xMin, xMax), ylim=(yMin, yMax))
+
+    line = ax.plot(x[0], y[0], color='k', lw=2)[0]
+
+    anim = FuncAnimation(
+    fig,
+    lambda i: line.set_data(x[:i:frameSlice], y[:i:frameSlice]),
+    frames=len(x)-1
+    )
+
+
+    plt.draw()
+
+    if shouldShow:
+        plt.show()
+
+    if shouldSave:
+        #Framerate of produced gif is ~1/10 the fps actually specified,
+        #no idea why; optimizing for 60 Hz display
+        anim.save(filename, writer="pillow", fps=600)
+
+    return True
 
 ################################################################################
 # For command-line interaction (entry into the program is below)
@@ -273,6 +327,7 @@ writeSolData(
     ["t", "r", "dr_dt", "theta"]
     )
 solData = readSolData("test.dat")
+
 plotSolData(
     solData,
     True,
@@ -283,6 +338,15 @@ plotSolData(
     labels=["r", "dr/dt", "theta"],
     dataNames=["r", "theta"],
     conversion=paramConversion
+    )
+
+makeAnimation(
+    solData,
+    False,
+    True,
+    filename="test.gif",
+    dataNames=["r", "theta"],
+    conversion=paramConversion,
     )
 '''
 ################################################################################
