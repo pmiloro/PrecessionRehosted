@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 import tkinter.ttk as ttk
 from PIL import ImageTk, Image
-from Solver import *
+from Solver import Orbits
 import os
 
 
