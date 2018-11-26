@@ -268,14 +268,14 @@ class Orbits():
         #Return True if plot generation was successful
         return True
     
-    def makeAnimation(
+    def makeAnimation(self,
         allData,
         shouldShow,
         shouldSave,
         dataNames=["x", "y"],
         conversion=defaultConversion,
         paramUnits = ["meters", "meters"],
-        filename = "defaultFilename.gif",
+        filename = 'defaultFilename.gif',
         animTitle = "Output",
         boundScale = 1.3,
         animSpeed = 1,
@@ -325,16 +325,17 @@ class Orbits():
 # For command-line interaction (entry into the program is below)
 ################################################################################
 '''
-writeSolData(
+Test = Orbits()
+Test.writeSolData(
     "test.dat",
     [1.2, 0, 0],
     np.linspace(0,2,2000),
     dr_dt,
     ["t", "r", "dr_dt", "theta"]
     )
-solData = readSolData("test.dat")
+solData = Test.readSolData("test.dat")
 
-plotSolData(
+Test.plotSolData(
     solData,
     True,
     True,
@@ -343,17 +344,19 @@ plotSolData(
     yUnits=["m/s", "m", "rads"],
     labels=["r", "dr/dt", "theta"],
     dataNames=["r", "theta"],
-    conversion=paramConversion
+    conversion=Test.paramConversion
     )
 
-makeAnimation(
+Test.makeAnimation(
     solData,
     False,
     True,
-    filename="test.gif",
     dataNames=["r", "theta"],
-    conversion=paramConversion,
+    conversion=Test.paramConversion,
+    filename="test.gif"
     )
+
+
 '''
 ################################################################################
 
