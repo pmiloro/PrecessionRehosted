@@ -17,6 +17,22 @@ def dr_dt(t, r):
 def dtheta_dt(t, theta):
     return 1/(2 * np.pi)
 
+################################################################################
+# Schwarzschild Equations of Motion (1st order in tau; s=tau)
+################################################################################
+
+def Schwarzschild(y,s,m=1): #y is the vector containing all the relevant variables, m is mass, s is a dummy variable(?)
+    r, p, a, v, w = y #read vector; r is radius, p is phi, a is dt/dtau, v is dr/dtau, w is dphi/dtau
+    dyds = [ # the monster array which handles all the equations
+    v,
+    w,
+    (-2*m/r)*((1-(2*m/r))**(-1))*v*a,
+    (m/(r**2))*((1-(2*m/r))**-1)*v**2-(1-(2*m/r))*(m/(r**2))*a**2+r*(1-(2*m/r))*w**2,
+    (-2/r)*v*w
+    ]
+    return dyds
+
+
 
 '''
 Reads ODE solution data from a file
@@ -78,9 +94,10 @@ class Orbits():
     ################################################################################
     Return True -> Returns true if writing was successful
     '''
-    def writeSolData(self,filename, initConditions, indVals, derivatives, axisNames):
+    def writeSolData(self,filename, initConditions, indVals, derivatives, axisNames,extraparams=[]): 
+        #extra params modify diffeq, input directly
         #Find the solution with helper method
-        rVals = self.getSolData(initConditions, indVals, derivatives)
+        rVals = self.getSolData(initConditions, indVals, derivatives,extraparams)
         #Get the number of "timesteps" completed (rows) and the
         #number of value fields (columns) of the 2d output array
         steps, vals = rVals.shape
@@ -117,7 +134,7 @@ class Orbits():
     ################################################################################
     Returns the odeint() method's output for the given conditions/derivatives
     '''
-    def getSolData(self,initConditions, indVals, derivatives):
+    def getSolData(self,initConditions, indVals, derivatives,extraparams):
         return odeint(derivatives, initConditions, indVals)
     
     
@@ -358,5 +375,54 @@ Test.makeAnimation(
 
 
 '''
-################################################################################
+##############################################################################
+# Schwarzschild interaction test
+##############################################################################
+'''
+Geomtest = Orbits()
+Geomtest.writeSolData(
+    "geomtest.dat",
+    [6,0,1,0,1/(6*np.sqrt(6))],
+    np.linspace(0,100,10000),
+    Schwarzschild,
+    ["tau","r","phi","dt/dtau","dr/dtau","dphi/dtau"]
+    )
+solData = Geomtest.readSolData("geomtest.dat")
+print(solData)
+solDatarray = solData[1]
+
+plotdata = [[solData[0][0],solData[0][1],solData[0][4],solData[0][2]],np.concatenate((solDatarray[:,0:2],solDatarray[:,4:5],solDatarray[:,2:3]),axis=1)]
+print(plotdata)
+
+Geomtest.plotSolData(
+    plotdata,
+    True,
+    True,
+    True,
+    filename = "GeomTest.png",
+    yUnits=["m/s", "m", "rads"],
+    labels=["r", "dr/dt", "theta"],
+    dataNames=["r", "phi"],
+    conversion=Geomtest.paramConversion
+    )
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+
+
+
+
+
+
+
 
