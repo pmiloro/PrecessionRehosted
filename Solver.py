@@ -21,16 +21,6 @@ def dtheta_dt(t, theta):
 # Schwarzschild Equations of Motion (1st order in tau; s=tau)
 ################################################################################
 
-def Schwarzschild(y,s,m=1): #y is the vector containing all the relevant variables, m is mass, s is a dummy variable(?)
-    r, p, a, v, w = y #read vector; r is radius, p is phi, a is dt/dtau, v is dr/dtau, w is dphi/dtau
-    dyds = [ # the monster array which handles all the equations
-    v,
-    w,
-    (-2*m/r)*((1-(2*m/r))**(-1))*v*a,
-    (m/(r**2))*((1-(2*m/r))**-1)*v**2-(1-(2*m/r))*(m/(r**2))*a**2+r*(1-(2*m/r))*w**2,
-    (-2/r)*v*w
-    ]
-    return dyds
 
 
 
@@ -47,6 +37,43 @@ class Orbits():
     def __init__(self):
         return None
     
+    def Schwarzschild(self,y,s,m=1): #y is the vector containing all the relevant variables, m is mass, s is a dummy variable(?)
+        r, p, a, v, w = y #read vector; r is radius, p is phi, a is dt/dtau, v is dr/dtau, w is dphi/dtau
+        d1 = v #first derivatives of r and phi respectively
+        d2 = w
+        d3 = (-2*m/(r**2))*((1-(2*m/r))**(-1))*v*a # these equations compute the second derivatives of t, r and phi
+        #if np.absolute(d3) <= 0.000000001: #rectification for error slip
+        #    d3 = 0
+        d4 = (2*m/(r**2))*((1-(2*m/r))**-1)*(v**2)-(1-(2*m/r))*(m/(r**2))*(a**2)+r*(1-(2*m/r))*(w**2)
+        #if np.absolute(d4) <= 0.000000001:
+        #    d4 = 0
+        d5 = (-2/r)*v*w
+        #if np.absolute(d5) <= 0.000000001:
+        #    d5 = 0
+        if r == 0:
+            print(s)
+        dyds = [d1,d2,d3,d4,d5]
+        return dyds
+        
+    def initcondgen(self,e,l,ri,pi,pos,m=1): #variable names are hopefully self explanatory, m included just in case we want to use it at some point
+        i_cond = [0,0,0,0,0]
+        i_cond[0] = ri
+        i_cond[1] = pi
+        sfactor = 1-2*m/ri
+        ai = e/sfactor
+        i_cond[2] = ai
+        if pos == True:
+            vi = np.sqrt(np.absolute(e**2-sfactor*(1+(l**2)/(ri**2))))
+        else:
+            vi = -np.sqrt(np.absolute(e**2-sfactor*(1+(l**2)/(ri**2))))
+        if np.absolute(vi) <= 0.00001:
+            vi = 0
+        i_cond[3] = vi
+        wi = l/(ri**2)
+        i_cond[4] = wi
+        return i_cond
+    
+
     def readSolData(self,filename):
         #Get the header information from the very first line of the file, e.g., the
         #strings identifying the data to follow in each associated column
@@ -379,34 +406,64 @@ Test.makeAnimation(
 # Schwarzschild interaction test
 ##############################################################################
 '''
-Geomtest = Orbits()
-Geomtest.writeSolData(
-    "geomtest.dat",
-    [6,0,1,0,1/(6*np.sqrt(6))],
+#ISCO test
+iscotest = Orbits()
+iscotest.writeSolData(
+    "iscotest.dat",
+    [6,0,1.5,0,1.5/(6*np.sqrt(6))],
     np.linspace(0,100,10000),
-    Schwarzschild,
+    iscotest.Schwarzschild,
     ["tau","r","phi","dt/dtau","dr/dtau","dphi/dtau"]
     )
-solData = Geomtest.readSolData("geomtest.dat")
+solData = iscotest.readSolData("iscotest.dat")
 print(solData)
 solDatarray = solData[1]
 
 plotdata = [[solData[0][0],solData[0][1],solData[0][4],solData[0][2]],np.concatenate((solDatarray[:,0:2],solDatarray[:,4:5],solDatarray[:,2:3]),axis=1)]
 print(plotdata)
 
-Geomtest.plotSolData(
+iscotest.plotSolData(
     plotdata,
     True,
     True,
     True,
-    filename = "GeomTest.png",
+    filename = "iscoTest.png",
     yUnits=["m/s", "m", "rads"],
     labels=["r", "dr/dt", "theta"],
     dataNames=["r", "phi"],
-    conversion=Geomtest.paramConversion
+    conversion=iscotest.paramConversion
     )
 
+#general test
 
+gentest = Orbits()
+iconds = gentest.initcondgen(1.01,4.3,30,0,False)
+print(iconds)
+
+gentest.writeSolData(
+    "gentest.dat",
+    iconds,
+    np.linspace(0,200,10000), #how do we guarantee these are the right values?)
+    gentest.Schwarzschild,
+    ["tau","r","phi","dt/dtau","dr/dtau","dphi/dtau"]
+    )
+solData = gentest.readSolData("gentest.dat")
+solDatarray = solData[1]
+
+plotdata = [[solData[0][0],solData[0][1],solData[0][4],solData[0][2]],np.concatenate((solDatarray[:,0:2],solDatarray[:,4:5],solDatarray[:,2:3]),axis=1)]
+print(plotdata)
+
+gentest.plotSolData(
+    plotdata,
+    True,
+    True,
+    True,
+    filename = "genTest.png",
+    yUnits=["m/s", "m", "rads"],
+    labels=["r", "dr/dt", "theta"],
+    dataNames=["r", "phi"],
+    conversion=gentest.paramConversion
+    )
 
 
 
