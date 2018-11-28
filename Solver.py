@@ -3,6 +3,8 @@ from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.animation import ImageMagickWriter
+from matplotlib.collections import PatchCollection
+import matplotlib.patches as pch
 
 
 def dy_dx(y, x):
@@ -54,6 +56,16 @@ class Orbits():
             print(s)
         dyds = [d1,d2,d3,d4,d5]
         return dyds
+    
+    def circlemaker(self,y,s,m=1):
+        r,p,v,w = y
+        d1 = 0
+        d2 = w
+        d3 = 0
+        d4 = 0
+        dyds = [d1,d2,d3,d4]
+        return dyds
+        
         
     def initcondgen(self,e,l,ri,pi,pos,m=1): #variable names are hopefully self explanatory, m included just in case we want to use it at some point
         i_cond = [0,0,0,0,0]
@@ -240,6 +252,18 @@ class Orbits():
     ################################################################################
     Return True -> Returns true if the plotting, saving, and/or displaying succeeded
     '''
+    
+    def ehcircle(self,m=1): #makes a circle at the Schwarzschild radius for visualization purposes
+        iconds = [2*m,0,0,np.pi/200] #r=2m, phi = 0, dr/dt = 0, frequency = whatever makes it smooth and a full circle
+        self.writeSolData(
+                "EHcircle.dat",
+                iconds,
+                np.linspace(0,400,400), #2pi/omega
+                self.circlemaker,
+                ["t", "r", "phi","dr_dt", "dp_dt"]
+                )
+        return None
+    
     def plotSolData(self,allData, shouldParameterize, shouldShow, shouldSave,
      filename = "defaultFilename.png",
      plotTitle = "Output",
@@ -248,7 +272,8 @@ class Orbits():
      yUnits=[""],
      paramUnits = ["meters", "meters"],
      dataNames=["x", "y"],
-     conversion=defaultConversion):
+     conversion=defaultConversion,
+     showEH=True):
     
         names = allData[0]
         fullArray = allData[1]
@@ -256,6 +281,9 @@ class Orbits():
         #Grab the timesteps into their own array for convenient access later
         tSteps = fullArray[:, 0]
     
+        fig, ax = plt.subplots(figsize=(5,5))
+    
+        ax.set_aspect(1)
         #If we should make a parametric plot
         if shouldParameterize:
             #Find the column location in fullArray of the data we want to use
@@ -267,18 +295,18 @@ class Orbits():
             x = out[:, 0]
             y = out[:, 1]
             #Title the plot
-            plt.title(plotTitle)
+            ax.set_title(plotTitle)
             #Label the x and y axes "x (units)", "y (units)"
-            plt.xlabel("x (" + paramUnits[0] + ")")
-            plt.ylabel("y (" + paramUnits[1] + ")")
+            ax.set_xlabel("x (" + paramUnits[0] + ")")
+            ax.set_ylabel("y (" + paramUnits[1] + ")")
             #Plot the x values versus the y values, which will implicitly be parametric
-            plt.plot(x, y)
+            ax.plot(x, y)
         #If we're not making parametric plots
         else:
             #Get the size of the "coordinate" fields in the input array
             n = fullArray.shape[1] - 1
             #Title the overall plot
-            plt.title(plotTitle)
+            ax.set_title(plotTitle)
             #Generate default unit labels for each axis if none were given
             if yUnits[0] == "":
                 yUnits = ["meters" for i in range(n)]
@@ -289,19 +317,35 @@ class Orbits():
     
                 #Make a new subplot in the (n, 1) grid (e.g., successive axes will
                 #move downwards)
-                plt.subplot(n, 1, axis + 1)
+                ax.subplot(n, 1, axis + 1)
                 #Label the x-axis as time
-                plt.xlabel("Time (" + timeUnits + ")")
+                ax.set_xlabel("Time (" + timeUnits + ")")
                 #and the y-axis as whatever the name of the coordinate is
-                plt.ylabel(labels[axis - 1] + " (" + yUnits[axis - 1] + ")")
+                ax.set_ylabel(labels[axis - 1] + " (" + yUnits[axis - 1] + ")")
     
                 #Then plot it with x using the timestep data and y using the
                 #coordinate data for that axis
-                plt.plot(tSteps, fullArray[:, axis + 1])
+                ax.plot(tSteps, fullArray[:, axis + 1])
     
             #Space out axes at the end so the x-labels don't overlap with the graph below
             plt.subplots_adjust(hspace=0.75)
-    
+        if showEH == True:
+            circle = pch.Circle((0,0),radius=2,color='black')
+            ax.add_patch(circle)
+            
+            """
+            #me overthinking things
+            try:
+                circledata = self.readSolData("EHcircle.dat")
+            except: 
+                self.ehcircle()
+                circledata = self.readSolData("EHcircle.dat")
+            circleArray = circledata[1]
+            circleout = self.paramConversion(circleArray[:,:],[1,2])
+            xc = circleout[:,0]
+            yc = circleout[:,1]
+            plt.plot(xc,yc)
+            """
         #If we should save the plot, write the resulting plot to the given filename
         if shouldSave:
             plt.savefig(filename)
@@ -344,6 +388,9 @@ class Orbits():
     
         ax.set(xlim=(xMin, xMax), ylim=(yMin, yMax))
     
+        circle = pch.Circle((0,0),radius=2,color='black')
+        ax.add_patch(circle)
+        
         line = ax.plot(x[0], y[0], color='k', lw=2)[0]
     
         anim = FuncAnimation(
@@ -451,7 +498,6 @@ solData = gentest.readSolData("gentest.dat")
 solDatarray = solData[1]
 
 plotdata = [[solData[0][0],solData[0][1],solData[0][4],solData[0][2]],np.concatenate((solDatarray[:,0:2],solDatarray[:,4:5],solDatarray[:,2:3]),axis=1)]
-print(plotdata)
 
 gentest.plotSolData(
     plotdata,
@@ -465,6 +511,14 @@ gentest.plotSolData(
     conversion=gentest.paramConversion
     )
 
+gentest.makeAnimation(
+    plotdata,
+    False,
+    True,
+    dataNames=["r", "phi"],
+    conversion=gentest.paramConversion,
+    filename="test.gif"
+    )
 
 
 
