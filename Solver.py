@@ -484,13 +484,12 @@ iscotest.plotSolData(
 #general test
 
 gentest = Orbits()
-iconds = gentest.initcondgen(1.01,4.3,30,0,False)
-print(iconds)
+iconds = gentest.initcondgen(.97,4.3,30,0,False)
 
 gentest.writeSolData(
     "gentest.dat",
     iconds,
-    np.linspace(0,200,10000), #how do we guarantee these are the right values?)
+    np.linspace(0,2000,10000), #how do we guarantee these are the right values?)
     gentest.Schwarzschild,
     ["tau","r","phi","dt/dtau","dr/dtau","dphi/dtau"]
     )
