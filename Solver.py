@@ -19,13 +19,6 @@ def dr_dt(t, r):
 def dtheta_dt(t, theta):
     return 1/(2 * np.pi)
 
-################################################################################
-# Schwarzschild Equations of Motion (1st order in tau; s=tau)
-################################################################################
-
-
-
-
 '''
 Reads ODE solution data from a file
 ################################################################################
@@ -34,11 +27,15 @@ filename -> File to read data from (file is not affected)
 Return dOut -> A 2D array of the file's contents, separated by field
 '''
 
-class Orbits():
+class Simulator():
 
     def __init__(self):
         return None
-    
+
+################################################################################
+# Schwarzschild Equations of Motion (1st order in tau; s=tau)
+################################################################################
+
     def Schwarzschild(self,y,s,m=1): #y is the vector containing all the relevant variables, m is mass, s is a dummy variable(?)
         r, p, a, v, w = y #read vector; r is radius, p is phi, a is dt/dtau, v is dr/dtau, w is dphi/dtau
         d1 = v #first derivatives of r and phi respectively
@@ -56,7 +53,7 @@ class Orbits():
             print(s)
         dyds = [d1,d2,d3,d4,d5]
         return dyds
-    
+
     def circlemaker(self,y,s,m=1):
         r,p,v,w = y
         d1 = 0
@@ -65,8 +62,8 @@ class Orbits():
         d4 = 0
         dyds = [d1,d2,d3,d4]
         return dyds
-        
-        
+
+
     def initcondgen(self,e,l,ri,pi,pos,m=1): #variable names are hopefully self explanatory, m included just in case we want to use it at some point
         i_cond = [0,0,0,0,0]
         i_cond[0] = ri
@@ -84,7 +81,26 @@ class Orbits():
         wi = l/(ri**2)
         i_cond[4] = wi
         return i_cond
-    
+
+    def initcondgen_ur_uw(self, ur, uw, ri, pi, m=1):
+        i_cond = [0,0,0,0,0]
+        i_cond[0] = ri
+        i_cond[1] = pi
+
+        vi = ur
+        if np.absolute(vi) <= 0.00001:
+            vi = 0
+        i_cond[3] = vi
+
+        wi = uw
+        i_cond[4] = wi
+
+        sfactor = 1-2*m/ri
+        i_cond[2] = np.sqrt((1 + sfactor**(-1) * vi**2 + ri**2 * wi**2)/sfactor)
+
+        return i_cond
+
+
 
     def readSolData(self,filename):
         #Get the header information from the very first line of the file, e.g., the
@@ -118,7 +134,7 @@ class Orbits():
                 hasSkipped += 1
         #Return the full set of separated data, along with the header information
         return [header, dOut]
-    
+
     '''
     Determines then writes the solution to the provided ODEs to a file
     ################################################################################
@@ -133,7 +149,8 @@ class Orbits():
     ################################################################################
     Return True -> Returns true if writing was successful
     '''
-    def writeSolData(self,filename, initConditions, indVals, derivatives, axisNames,extraparams=[]): 
+    def writeSolData(self,filename, initConditions, indVals, derivatives, axisNames,
+        extraparams=[]):
         #extra params modify diffeq, input directly
         #Find the solution with helper method
         rVals = self.getSolData(initConditions, indVals, derivatives,extraparams)
@@ -142,7 +159,7 @@ class Orbits():
         steps, vals = rVals.shape
         #Open the file at filename for writing (deletes its previous contents)
         with open(filename, 'w') as file:
-    
+
             for ind in range(vals + 1):
                 if ind != vals:
                     file.write(axisNames[ind] + ",")
@@ -160,7 +177,7 @@ class Orbits():
                 file.write("\n")
         #Return True if writing succeeded
         return True
-    
+
     '''
     Helper method that actually does the integration for writeSolData()
     (for possible expansion later, currently fairly pointless)
@@ -175,8 +192,8 @@ class Orbits():
     '''
     def getSolData(self,initConditions, indVals, derivatives,extraparams):
         return odeint(derivatives, initConditions, indVals)
-    
-    
+
+
     '''
     Default R^N to R^2 mapping for the plotSolData() method; truncates the passed
         array to include only the columns specified by their index in locs.
@@ -205,8 +222,8 @@ class Orbits():
         #Return the now (N, V') mapped array as the output, snipping the first
         #empty row to avoid weird data effects
         return outArray[1:, :]
-    
-    
+
+
     '''
     Maps the input from 2D polar to 2D Cartesian input, via the standard r * cos(th)
         and r * sin(th) transformations, using the same general methodology as in
@@ -252,7 +269,7 @@ class Orbits():
     ################################################################################
     Return True -> Returns true if the plotting, saving, and/or displaying succeeded
     '''
-    
+
     def ehcircle(self,m=1): #makes a circle at the Schwarzschild radius for visualization purposes
         iconds = [2*m,0,0,np.pi/200] #r=2m, phi = 0, dr/dt = 0, frequency = whatever makes it smooth and a full circle
         self.writeSolData(
@@ -263,29 +280,30 @@ class Orbits():
                 ["t", "r", "phi","dr_dt", "dp_dt"]
                 )
         return None
-    
+
     def plotSolData(self,allData, shouldParameterize, shouldShow, shouldSave,
      filename = "defaultFilename.png",
      plotTitle = "Output",
      timeUnits="seconds",
      labels=[chr(i) for i in range(97,123,1)],
-     yUnits=[""],
+     yUnits=[None],
      paramUnits = ["meters", "meters"],
      dataNames=["x", "y"],
      conversion=defaultConversion,
      showEH=True):
-    
+
         names = allData[0]
         fullArray = allData[1]
-    
+
         #Grab the timesteps into their own array for convenient access later
         tSteps = fullArray[:, 0]
-    
-        fig, ax = plt.subplots(figsize=(5,5))
-    
-        ax.set_aspect(1)
+
         #If we should make a parametric plot
         if shouldParameterize:
+
+            fig, ax = plt.subplots(figsize=(5,5))
+            ax.set_aspect(1)
+
             #Find the column location in fullArray of the data we want to use
             locs = [names.index(name) for name in dataNames]
             #Get the x and y arrays using our specified conversion by passing
@@ -301,61 +319,64 @@ class Orbits():
             ax.set_ylabel("y (" + paramUnits[1] + ")")
             #Plot the x values versus the y values, which will implicitly be parametric
             ax.plot(x, y)
+
+            if showEH:
+                circle = pch.Circle((0,0),radius=2,color='black')
+                ax.add_patch(circle)
+
+                """
+                #me overthinking things
+                try:
+                    circledata = self.readSolData("EHcircle.dat")
+                except:
+                    self.ehcircle()
+                    circledata = self.readSolData("EHcircle.dat")
+                circleArray = circledata[1]
+                circleout = self.paramConversion(circleArray[:,:],[1,2])
+                xc = circleout[:,0]
+                yc = circleout[:,1]
+                plt.plot(xc,yc)
+                """
         #If we're not making parametric plots
         else:
             #Get the size of the "coordinate" fields in the input array
             n = fullArray.shape[1] - 1
             #Title the overall plot
-            ax.set_title(plotTitle)
+            plt.title(plotTitle)
             #Generate default unit labels for each axis if none were given
-            if yUnits[0] == "":
+            if yUnits[0] == None:
                 yUnits = ["meters" for i in range(n)]
             #For each coordinate field, we will make additional subplots which will
             #automatically be composited into a single larger one for ease of
             #saving and display
-            for axis in range(n):
-    
+            for axis in range(1,n):
+
                 #Make a new subplot in the (n, 1) grid (e.g., successive axes will
                 #move downwards)
-                ax.subplot(n, 1, axis + 1)
+                plt.subplot(n, 1, axis)
                 #Label the x-axis as time
-                ax.set_xlabel("Time (" + timeUnits + ")")
+                plt.xlabel(u'\u03C4' +  " (" + timeUnits + ")")
                 #and the y-axis as whatever the name of the coordinate is
-                ax.set_ylabel(labels[axis - 1] + " (" + yUnits[axis - 1] + ")")
-    
+                if yUnits[axis] != "":
+                    plt.ylabel(labels[axis-1] + " (" + yUnits[axis-1] + ")")
+                else:
+                    plt.ylabel(labels[axis-1])
                 #Then plot it with x using the timestep data and y using the
                 #coordinate data for that axis
-                ax.plot(tSteps, fullArray[:, axis + 1])
-    
+                plt.plot(tSteps, fullArray[:, axis + 1])
+
             #Space out axes at the end so the x-labels don't overlap with the graph below
-            plt.subplots_adjust(hspace=0.75)
-        if showEH == True:
-            circle = pch.Circle((0,0),radius=2,color='black')
-            ax.add_patch(circle)
-            
-            """
-            #me overthinking things
-            try:
-                circledata = self.readSolData("EHcircle.dat")
-            except: 
-                self.ehcircle()
-                circledata = self.readSolData("EHcircle.dat")
-            circleArray = circledata[1]
-            circleout = self.paramConversion(circleArray[:,:],[1,2])
-            xc = circleout[:,0]
-            yc = circleout[:,1]
-            plt.plot(xc,yc)
-            """
+            plt.subplots_adjust(hspace=1.5)
         #If we should save the plot, write the resulting plot to the given filename
         if shouldSave:
             plt.savefig(filename)
         #If we should show the plot, display it
         if shouldShow:
             plt.show()
-    
+
         #Return True if plot generation was successful
         return True
-    
+
     def makeAnimation(self,
         allData,
         shouldShow,
@@ -369,54 +390,58 @@ class Orbits():
         animSpeed = 1,
         frameSlice = 10
         ):
+
         names = allData[0]
         fullArray = allData[1]
-    
+
         tSteps = fullArray[:, 0].flatten()
-        fig, ax = plt.subplots(figsize=(5, 3))
-    
+
+        fig, ax = plt.subplots(figsize=(5, 5))
+        ax.set_aspect(1)
+
         locs = [names.index(name) for name in dataNames]
         out = conversion(fullArray[:, :], locs)
+
+        ax.set_xlabel("x" + "(" + paramUnits[0]  + ")")
+        ax.set_ylabel("y" + "(" + paramUnits[1] +  ")")
+
         x = out[:, 0].flatten()
         y = out[:, 1].flatten()
-    
+
         xMin = boundScale * np.amin(x)
         xMax = boundScale * np.amax(x)
-    
+
         yMin = boundScale * np.amin(y)
         yMax = boundScale * np.amax(y)
-    
+
         ax.set(xlim=(xMin, xMax), ylim=(yMin, yMax))
-    
+
         circle = pch.Circle((0,0),radius=2,color='black')
         ax.add_patch(circle)
-        
+
         line = ax.plot(x[0], y[0], color='k', lw=2)[0]
-    
+
         anim = FuncAnimation(
         fig,
         lambda i: line.set_data(x[:i:frameSlice], y[:i:frameSlice]),
         frames=len(x)-1
         )
-    
-    
-        plt.draw()
-    
+
         if shouldShow:
             plt.show()
-    
+
         if shouldSave:
             #Framerate of produced gif is ~1/10 the fps actually specified,
             #no idea why; optimizing for 60 Hz display
             anim.save(filename, writer="pillow", fps=600)
-    
+
         return True
 
 ################################################################################
 # For command-line interaction (entry into the program is below)
 ################################################################################
 '''
-Test = Orbits()
+Test = Simulator()
 Test.writeSolData(
     "test.dat",
     [1.2, 0, 0],
@@ -454,7 +479,7 @@ Test.makeAnimation(
 ##############################################################################
 '''
 #ISCO test
-iscotest = Orbits()
+iscotest = Simulator()
 iscotest.writeSolData(
     "iscotest.dat",
     [6,0,1.5,0,1.5/(6*np.sqrt(6))],
@@ -483,7 +508,7 @@ iscotest.plotSolData(
 
 #general test
 
-gentest = Orbits()
+gentest = Simulator()
 iconds = gentest.initcondgen(.97,4.3,30,0,False)
 
 gentest.writeSolData(
