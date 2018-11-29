@@ -419,7 +419,7 @@ class Simulator():
         circle = pch.Circle((0,0),radius=2,color='black')
         ax.add_patch(circle)
 
-        line = ax.plot(x[0], y[0], color='k', lw=2)[0]
+        line = ax.plot(x[0], y[0], color='b', lw=2)[0]
 
         anim = FuncAnimation(
         fig,
@@ -434,6 +434,8 @@ class Simulator():
             #Framerate of produced gif is ~1/10 the fps actually specified,
             #no idea why; optimizing for 60 Hz display
             anim.save(filename, writer="pillow", fps=600)
+
+        print("Animation Complete")
 
         return True
 

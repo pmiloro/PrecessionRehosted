@@ -265,10 +265,10 @@ class Application(tk.Frame):
         for index in range(1,frameNumber):
             baseFrame.seek(index)
 
-            newFrame = lastFrame.copy()
+            newFrame = lastFrame
             newFrame.paste(baseFrame, box=frameBox)
 
-            allFrames.append(newFrame)
+            allFrames.append(newFrame.copy())
             lastFrame = newFrame
 
         return allFrames[1:]
