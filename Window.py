@@ -137,7 +137,7 @@ class Application(tk.Frame):
         style.configure("I.TButton", foreground="white", background="white")
         style.configure("BW.TLabel", foreground="white", background="black")
 
-        style.configure("Title.TLabel", font=tkFont.Font(family="Times New Roman", size=18))
+        style.configure("Title.TLabel", font=tkFont.Font(family="Times New Roman", size=30))
 
         style.configure("Invalid.TEntry", foreground="#ff7153")
         style.configure("Empty.TEntry", foreground="grey")

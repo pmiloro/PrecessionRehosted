@@ -342,31 +342,35 @@ class Simulator():
             #Get the size of the "coordinate" fields in the input array
             n = fullArray.shape[1] - 1
             #Title the overall plot
-            plt.title(plotTitle)
+            
+            fig = plt.figure(figsize=(6,8))
             #Generate default unit labels for each axis if none were given
             if yUnits[0] == None:
                 yUnits = ["meters" for i in range(n)]
             #For each coordinate field, we will make additional subplots which will
             #automatically be composited into a single larger one for ease of
             #saving and display
-            for axis in range(1,n):
-
+            for axis in range(1,n+1):
                 #Make a new subplot in the (n, 1) grid (e.g., successive axes will
                 #move downwards)
-                plt.subplot(n, 1, axis)
+                ax = fig.add_subplot(n, 1, axis)
                 #Label the x-axis as time
-                plt.xlabel(u'\u03C4' +  " (" + timeUnits + ")")
+                ax.set_xlabel(u'\u03C4' +  " (" + timeUnits + ")")
                 #and the y-axis as whatever the name of the coordinate is
                 if yUnits[axis] != "":
-                    plt.ylabel(labels[axis-1] + " (" + yUnits[axis-1] + ")")
+                    ax.set_ylabel(labels[axis] + " (" + yUnits[axis] + ")")
                 else:
-                    plt.ylabel(labels[axis-1])
+                    ax.set_ylabel(labels[axis])
                 #Then plot it with x using the timestep data and y using the
                 #coordinate data for that axis
-                plt.plot(tSteps, fullArray[:, axis + 1])
-
+                ax.plot(tSteps, fullArray[:, axis])
+                #set a title, but only for the first plot; hacky, but w/e
+                if axis == 1:    
+                    ax.set_title(plotTitle)
+                
             #Space out axes at the end so the x-labels don't overlap with the graph below
-            plt.subplots_adjust(hspace=1.5)
+            fig.subplots_adjust(hspace=1)
+            
         #If we should save the plot, write the resulting plot to the given filename
         if shouldSave:
             plt.savefig(filename)
@@ -536,6 +540,27 @@ gentest.plotSolData(
     dataNames=["r", "phi"],
     conversion=gentest.paramConversion
     )
+
+fNF = [
+            "tau",
+            'r',
+            "phi",
+            "dt/d" + "tau",
+            "dr/d " + "phi",
+            "dphi/dt"
+            ]
+
+gentest.plotSolData(
+                solData,
+                False,
+                False,
+                True,
+                filename="genTest_components.png",
+                plotTitle="genTest Components",
+                timeUnits="M",
+                labels=fNF,
+                yUnits=['M', 'M', "rad", "", "", "rad/M"]
+            )
 
 gentest.makeAnimation(
     plotdata,
